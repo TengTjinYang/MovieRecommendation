@@ -1,9 +1,9 @@
 import pandas as pd
 import re
-import tensorflow_hub as hub
+#import tensorflow_hub as hub
 import numpy as np
 import sqlite3
-
+from sentence_transformers import SentenceTransformer
 
 
 # Load the Universal Sentence Encoder model from TensorFlow Hub
@@ -82,11 +82,15 @@ def get_sentence_embeddings(sentences):
     return embeddings.numpy()
 
 def vectorise_cast_crew(dataset,category):
+    
     # Fill NaN values with an empty string and concatenate 'primaryName' and 'characters' columns
     dataset['actor_crew'] = dataset['primaryName'].fillna('') + ' as ' + dataset[category].fillna('')
 
     # Group by 'tconst' and join the text data for each 'tconst'
     film_chars = dataset.groupby('tconst')['actor_crew'].apply(lambda x: ' '.join(x)).reset_index()
+    
+    model = SentenceTransformer('all-MiniLM-L6-v2')
+    vectors = model.encode(dataset['actor_crew'].tolist())
 
     # Create TF-IDF vectorizer
     #vectorizer = TfidfVectorizer(tokenizer=combined_text_tokenizer)
@@ -99,15 +103,15 @@ def vectorise_cast_crew(dataset,category):
     #tconst_vector_df.insert(0, 'tconst', film_chars['tconst'])  # Add 'tconst' column to the vector DataFrame
     
     
-    film_chars = dataset.groupby('tconst')['actor_crew'].apply(lambda x: ' '.join(x)).reset_index()
+    #film_chars = dataset.groupby('tconst')['actor_crew'].apply(lambda x: ' '.join(x)).reset_index()
 
     # Get the USE embeddings for the concatenated text
-    sentence_embeddings = get_sentence_embeddings(film_chars['actor_crew'])
+    #sentence_embeddings = get_sentence_embeddings(film_chars['actor_crew'])
 
     # Create a DataFrame to store 'tconst' with its respective USE embeddings
-    embedding_columns = [f"use_{i}" for i in range(len(sentence_embeddings[0]))]  # Column names for embeddings
-    vectors = pd.DataFrame(np.vstack(sentence_embeddings), columns=embedding_columns)
-    vectors.insert(0, 'tconst', film_chars['tconst'])  # Add 'tconst' column to the embedding DataFrame
+    #embedding_columns = [f"use_{i}" for i in range(len(sentence_embeddings[0]))]  # Column names for embeddings
+    #vectors = pd.DataFrame(np.vstack(sentence_embeddings), columns=embedding_columns)
+    #vectors.insert(0, 'tconst', film_chars['tconst'])  # Add 'tconst' column to the embedding DataFrame
     return vectors
 
 # Now, 'tconst_vector_df' contains TF-IDF vectors for each 'tconst' while retaining actor and character information
