@@ -1,4 +1,15 @@
 import pandas as pd
+import re
+import tensorflow_hub as hub
+import numpy as np
+import sqlite3
+
+
+
+# Load the Universal Sentence Encoder model from TensorFlow Hub
+module_url = "https://tfhub.dev/google/universal-sentence-encoder/4"
+use_model = hub.load(module_url)
+
 
 #title pricipals combine category and character columns
 ###Basic Plan of Action###
@@ -58,6 +69,49 @@ def standardise_dataset_principals(dataset,column1,column2, value):
 #merge the ratings and basics dataset
 def merge_2_datasets(ds1,ds2,column):
     return pd.merge(ds2, ds1, on= column, how='left')
+
+#define a custom tokenizer
+def combined_text_tokenizer(text):
+    # Replace spaces with underscores
+    text = re.sub(r'\s', '_', text)
+    return [text]
+
+#getting USE embeddings for a list of sentences
+def get_sentence_embeddings(sentences):
+    embeddings = use_model(sentences)
+    return embeddings.numpy()
+
+def vectorise_cast_crew(dataset,category):
+    # Fill NaN values with an empty string and concatenate 'primaryName' and 'characters' columns
+    dataset['actor_crew'] = dataset['primaryName'].fillna('') + ' as ' + dataset[category].fillna('')
+
+    # Group by 'tconst' and join the text data for each 'tconst'
+    film_chars = dataset.groupby('tconst')['actor_crew'].apply(lambda x: ' '.join(x)).reset_index()
+
+    # Create TF-IDF vectorizer
+    #vectorizer = TfidfVectorizer(tokenizer=combined_text_tokenizer)
+
+    # Apply TF-IDF vectorization on the combined text for each 'tconst'
+    #tfidf_vectors = vectorizer.fit_transform(film_chars['actor_char'])
+
+    # Create a DataFrame to store 'tconst' with its respective TF-IDF vectors
+    #tconst_vector_df = pd.DataFrame(tfidf_vectors.toarray(), columns=vectorizer.get_feature_names_out(), dtype='float64')
+    #tconst_vector_df.insert(0, 'tconst', film_chars['tconst'])  # Add 'tconst' column to the vector DataFrame
+    
+    
+    film_chars = dataset.groupby('tconst')['actor_crew'].apply(lambda x: ' '.join(x)).reset_index()
+
+    # Get the USE embeddings for the concatenated text
+    sentence_embeddings = get_sentence_embeddings(film_chars['actor_crew'])
+
+    # Create a DataFrame to store 'tconst' with its respective USE embeddings
+    embedding_columns = [f"use_{i}" for i in range(len(sentence_embeddings[0]))]  # Column names for embeddings
+    vectors = pd.DataFrame(np.vstack(sentence_embeddings), columns=embedding_columns)
+    vectors.insert(0, 'tconst', film_chars['tconst'])  # Add 'tconst' column to the embedding DataFrame
+    return vectors
+
+# Now, 'tconst_vector_df' contains TF-IDF vectors for each 'tconst' while retaining actor and character information
+# You can merge or join this DataFrame with other datasets using 'tconst' as a common key
 
 # merge it into one dataset using the identifier
 # take it apart for each row and vetorise the columns
@@ -129,6 +183,7 @@ merged_dataset_films = merge_2_datasets(title_basics,title_ratings,'tconst')
 
 print(title_ratings)
 print(title_basics)
-print(merged_dataset_films)
+print(vectorise_cast_crew(title_priciples_actors,'characters'))
+print(vectorise_cast_crew(title_principals_crew,'category'))
 
 
