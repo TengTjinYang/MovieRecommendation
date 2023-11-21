@@ -85,6 +85,32 @@ def vectorise_cast_crew(dataset,category):
 
 ####  ---------------------------------   MAIN BODY    ---------------------------------#### 
 
+#create a database to store the final vectors
+# Connect to SQLite database or create a new one if it doesn't exist
+conn = sqlite3.connect('vectors_database.db')
+
+# Create a cursor object to execute SQL queries
+cursor = conn.cursor()
+
+# Create a table to store vectors
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS Vectors (
+        tconst TEXT PRIMARY KEY,
+        vector_dim1 REAL,
+        vector_dim2 REAL,
+        vector_dim3 REAL,
+        -- Add columns for each dimension of the vector
+        -- Add as many columns as the dimensions of your vectors require
+        -- (For example, if your vectors are 100-dimensional, add 100 columns)
+    )
+''')
+
+#need to add all the vectors from the panda dataframe
+
+# Save changes and close the connection
+conn.commit()
+conn.close()
+
 #loading all the csv files
 title_basics = load_csv("test/ImdbTitleBasicsTest.csv")
 name = load_csv("test/ImdbNameTest.csv")
