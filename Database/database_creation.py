@@ -63,12 +63,12 @@ def standardise_dataset_principals(dataset,column1,column2, value):
 
 #merge the ratings and basics dataset
 def merge_2_datasets(ds1,ds2,column):
-    return pd.merge(ds2, ds1, on= column, how='left')
+    return ds1.merge(ds2, on= column, how='left')
 
 def vectorise_cast_crew(dataset,category):
     
     # Fill NaN values with an empty string and concatenate 'primaryName' and 'characters' columns
-    dataset['actor_crew'] = dataset['primaryName'].fillna('') + ' as ' + dataset[category].fillna('')
+    dataset['actor_crew'] = dataset['primaryName'].fillna('') + dataset[category].fillna('')
 
     # Group by 'tconst' and join the text data for each 'tconst'
     #film_chars = dataset.groupby('tconst')['actor_crew'].apply(lambda x: ' '.join(x)).reset_index()
@@ -87,29 +87,29 @@ def vectorise_cast_crew(dataset,category):
 
 #create a database to store the final vectors
 # Connect to SQLite database or create a new one if it doesn't exist
-conn = sqlite3.connect('vectors_database.db')
+# conn = sqlite3.connect('vectors_database.db')
 
-# Create a cursor object to execute SQL queries
-cursor = conn.cursor()
+# # Create a cursor object to execute SQL queries
+# cursor = conn.cursor()
 
-# Create a table to store vectors
-cursor.execute('''
-    CREATE TABLE IF NOT EXISTS Vectors (
-        tconst TEXT PRIMARY KEY,
-        vector_dim1 REAL,
-        vector_dim2 REAL,
-        vector_dim3 REAL,
-        -- Add columns for each dimension of the vector
-        -- Add as many columns as the dimensions of your vectors require
-        -- (For example, if your vectors are 100-dimensional, add 100 columns)
-    )
-''')
+# # Create a table to store vectors
+# cursor.execute('''
+#     CREATE TABLE IF NOT EXISTS Vectors (
+#         tconst TEXT PRIMARY KEY,
+#         vector_dim1 REAL,
+#         vector_dim2 REAL,
+#         vector_dim3 REAL,
+#         -- Add columns for each dimension of the vector
+#         -- Add as many columns as the dimensions of your vectors require
+#         -- (For example, if your vectors are 100-dimensional, add 100 columns)
+#     )
+# ''')
 
-#need to add all the vectors from the panda dataframe
+# #need to add all the vectors from the panda dataframe
 
-# Save changes and close the connection
-conn.commit()
-conn.close()
+# # Save changes and close the connection
+# conn.commit()
+# conn.close()
 
 #loading all the csv files
 title_basics = load_csv("test/ImdbTitleBasicsTest.csv")
@@ -118,8 +118,8 @@ title_ratings = load_csv("test/ImdbTitleRatingsTest.csv")
 title_principals = load_csv("test/ImdbTitlePrincipalsTest.csv")
 
 # if you want to display the full dataset or not 
-pd.set_option('display.max_rows', None)
-#pd.set_option('display.max_columns', None)
+# pd.set_option('display.max_rows', None)
+# pd.set_option('display.max_columns', None)
 
 #removing unwanted columns
 name = remove_columns(name,'birthYear')
@@ -156,7 +156,8 @@ title_principals = clean_dataset(title_principals,'category','actress', 'actor')
 
 #splitting up title_principles into actors and crew
 merged_dataset_people = merge_2_datasets(title_principals,name,'nconst')
-title_priciples_actors, title_principals_crew = split_dataset_by_value(title_principals,'category','actor','self')
+merged_dataset_people = remove_columns(merged_dataset_people,'knownForTitles')
+title_priciples_actors, title_principals_crew = split_dataset_by_value(merged_dataset_people,'category','actor','self')
 
 #cleaning up the two split tables
 title_principals_crew = remove_columns(title_principals_crew,'characters')
@@ -166,14 +167,12 @@ title_priciples_actors = clean_dataset(title_priciples_actors,'characters', r'\\
 title_priciples_actors['characters'] = title_priciples_actors['characters'].str.strip('[]').str.replace('"', '')
 title_priciples_actors = standardise_dataset_principals(title_priciples_actors,'category','characters','self')
 
-#merging basics and ratings
-merged_dataset_films = merge_2_datasets(title_basics,title_ratings,'tconst')
-
+print(merged_dataset_people)
 ##vectorise basics and ratings merged dataset
 
-print(title_ratings)
-print(title_basics)
-print(vectorise_cast_crew(title_priciples_actors,'characters'))
-print(vectorise_cast_crew(title_principals_crew,'category'))
+# print(title_ratings)
+# print(title_basics)
+# print(vectorise_cast_crew(title_priciples_actors,'characters'))
+# print(vectorise_cast_crew(title_principals_crew,'category'))
 
 
