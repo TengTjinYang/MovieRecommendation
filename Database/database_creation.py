@@ -1,7 +1,6 @@
 import pandas as pd
-import re
+from sklearn.preprocessing import OneHotEncoder
 import numpy as np
-import sqlite3
 from sentence_transformers import SentenceTransformer
 
 
@@ -64,18 +63,6 @@ def standardise_dataset_principals(dataset,column1,column2, value):
 #merge the ratings and basics dataset
 def merge_2_datasets(ds1,ds2,column):
     return ds1.merge(ds2, on= column, how='left')
-
-def vectorise_cast_crew(dataset,category):
-    
-    # Fill NaN values with an empty string and concatenate 'primaryName' and 'characters' columns
-    dataset['actor_crew'] = dataset['primaryName'].fillna('') + dataset[category].fillna('')
-
-    # Group by 'tconst' and join the text data for each 'tconst'
-    #film_chars = dataset.groupby('tconst')['actor_crew'].apply(lambda x: ' '.join(x)).reset_index()
-    
-    model = SentenceTransformer('all-MiniLM-L6-v2')
-    vectors = model.encode(dataset['actor_crew'].tolist())
-    return vectors
 
 # merge it into one dataset using the identifier
 # take it apart for each row and vetorise the columns
@@ -157,18 +144,45 @@ title_principals = clean_dataset(title_principals,'category','actress', 'actor')
 #splitting up title_principles into actors and crew
 merged_dataset_people = merge_2_datasets(title_principals,name,'nconst')
 merged_dataset_people = remove_columns(merged_dataset_people,'knownForTitles')
-title_priciples_actors, title_principals_crew = split_dataset_by_value(merged_dataset_people,'category','actor','self')
 
-#cleaning up the two split tables
-title_principals_crew = remove_columns(title_principals_crew,'characters')
-title_priciples_actors = clean_dataset(title_priciples_actors,'characters', r'\\n|\n', 'unknown')
+merged_dataset_people = clean_dataset(merged_dataset_people,'characters', r'\\n|\n', 'unknown')
 
 # removing the [""] from the title_pricipals dataset
-title_priciples_actors['characters'] = title_priciples_actors['characters'].str.strip('[]').str.replace('"', '')
-title_priciples_actors = standardise_dataset_principals(title_priciples_actors,'category','characters','self')
+merged_dataset_people['characters'] = merged_dataset_people['characters'].str.strip('[]').str.replace('"', '')
+merged_dataset_people = standardise_dataset_principals(merged_dataset_people,'category','characters','self')
 
 print(merged_dataset_people)
 ##vectorise basics and ratings merged dataset
+
+merged_dataset_people['primaryName'].fillna('', inplace=True)
+
+merged_dataset_people['text_to_vectorize'] = merged_dataset_people.apply(
+    lambda row: row['characters'] + ' ' + row['primaryName'] 
+                if row['category'] in ['actor', 'self'] 
+                else row['primaryName'], axis=1)
+
+# Vectorize the 'text_to_vectorize' column
+model = SentenceTransformer('all-MiniLM-L6-v2')
+text_vectors = model.encode(merged_dataset_people['text_to_vectorize'].tolist())
+
+# Vectorize 'category' using OneHotEncoder
+encoder = OneHotEncoder(sparse_output=False)
+category_encoded = encoder.fit_transform(merged_dataset_people[['category']])
+
+# Concatenate all vectors (text and categorical)
+final_vectors = [np.concatenate((tv, ce)) for tv, ce in zip(text_vectors, category_encoded)]
+
+# Convert the list of vectors into a DataFrame
+vectors_df = pd.DataFrame(final_vectors)
+
+# Add the 'tconst' column from merged_dataset to vectors_df
+vectors_df['tconst'] = merged_dataset_people['tconst'].values
+
+# Rearrange the columns so 'tconst' is the first column
+columns = ['tconst'] + [col for col in vectors_df.columns if col != 'tconst']
+vectors_df = vectors_df[columns]
+
+print(vectors_df)
 
 # print(title_ratings)
 # print(title_basics)
