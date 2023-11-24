@@ -5,7 +5,7 @@ from sqlalchemy import create_engine
 
 # Access the 'vectors_df' from each script
 df1 = yang_vectorize.vectors_df
-df2 = database_creation.vectors_df
+df2 = database_creation.aggregated_vectors
 
 # Merge the dataframes on 'tconst'
 merged_df = pd.merge(df1, df2, on='tconst', how='inner')

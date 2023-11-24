@@ -150,7 +150,6 @@ merged_dataset_people = clean_dataset(merged_dataset_people,'characters', r'\\n|
 # removing the [""] from the title_pricipals dataset
 merged_dataset_people['characters'] = merged_dataset_people['characters'].str.strip('[]').str.replace('"', '')
 merged_dataset_people = standardise_dataset_principals(merged_dataset_people,'category','characters','self')
-
 print(merged_dataset_people)
 ##vectorise basics and ratings merged dataset
 
@@ -181,9 +180,8 @@ vectors_df['tconst'] = merged_dataset_people['tconst'].values
 # Rearrange the columns so 'tconst' is the first column
 columns = ['tconst'] + [col for col in vectors_df.columns if col != 'tconst']
 vectors_df = vectors_df[columns]
-
-print(vectors_df)
-
+aggregated_vectors = vectors_df.groupby('tconst').mean().reset_index()
+print(aggregated_vectors)
 # print(title_ratings)
 # print(title_basics)
 # print(vectorise_cast_crew(title_priciples_actors,'characters'))
