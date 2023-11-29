@@ -15,6 +15,7 @@ def vetorize_text(text):
     else:
         return np.zeros(word2vec_model.vector_size)
 
+
 #need to use padding on the vectors so they match with the dimentions of our dataset vectors    
 
 # lsh the original query to our dataset - it should return a movie name
@@ -24,7 +25,26 @@ def vetorize_text(text):
 
 # -----------------------------------------  main body  ----------------------------------------#
 
+#lsh class
+class LSH:
+    def __init__(self, n_bits, n_planes):
+        self.n_bits = n_bits
+        self.n_planes = n_planes
+        self.hyperplanes = np.random.randn(n_planes, n_bits)
+        self.buckets = {}
 
+    def hash_vector(self, vec):
+        return ''.join(['1' if np.dot(self.hyperplanes[i], vec) >= 0 else '0' for i in range(self.n_planes)])
+
+    def add_vector_to_bucket(self, vec, idx):
+        hashed_vec = self.hash_vector(vec)
+        if hashed_vec not in self.buckets:
+            self.buckets[hashed_vec] = []
+        self.buckets[hashed_vec].append(idx)
+
+    def query(self, query_vec):
+        hashed_query = self.hash_vector(query_vec)
+        return self.buckets.get(hashed_query, [])
 
 
 # Sample questions and predictions
@@ -87,3 +107,18 @@ prediction_vectors = vetorize_text(tokenized_text) #[get_text_vector(text) for t
 #prediction_vectors = [get_text_vector(text) for text in tokenized_text[len(questions):]]
 
 print(prediction_vectors)
+
+#####some stuff for lsh
+# Example dataset (randomly generated)
+data = np.random.rand(10, 5)  # 10 vectors of dimension 5
+
+lsh = LSH(n_bits=4, n_planes=3)
+
+# Adding vectors to buckets
+for idx, vector in enumerate(data):
+    lsh.add_vector_to_bucket(vector, idx)
+
+# Querying for a vector
+query_vector = np.random.rand(5)
+query_result = lsh.query(query_vector)
+print("Query result:", query_result)
