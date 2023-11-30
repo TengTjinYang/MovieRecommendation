@@ -186,5 +186,3 @@ print(aggregated_vectors)
 # print(title_basics)
 # print(vectorise_cast_crew(title_priciples_actors,'characters'))
 # print(vectorise_cast_crew(title_principals_crew,'category'))
-
-
