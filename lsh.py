@@ -125,6 +125,7 @@ print("Identifiers of nearest neighbors:", retrieved_identifiers)
 # Find the index of the retrieved identifier in the list of identifiers
 retrieved_identifier = retrieved_identifiers[0] #ttconst
 index_of_movie = identifiers.index(retrieved_identifier)
+print(retrieved_identifier)
 
 # Retrieve the vector for the identified movie
 movie_vector = vectors[index_of_movie]
