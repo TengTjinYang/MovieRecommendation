@@ -94,9 +94,11 @@ if option == "1":
     retrieved_vector,retrieved_ttconst = lsh.LSH(query_vector,database_vectors,identifiers)
     print(retrieved_ttconst)
     print(retrieved_vector)
-    #cosine_sim = lsh.compute_cosine_similarity(prediction_vector,retrieved_vector)
-    #print()
-    #print("The cosine similarity between the movie vector and the prediction is: ", cosine_sim)
+    prediction = ""
+    prediction_vector = lsh.vectorise_prediction(prediction, target_dimension)
+    cosine_sim = lsh.compute_cosine_similarity(prediction_vector,retrieved_vector)
+    print()
+    print("The cosine similarity between the movie vector and the prediction is: ", cosine_sim)
 else: 
     query_vectors = lsh.get_vectors_for_query(test_queries,target_dimension)
     for i in range (len(query_vectors)):
