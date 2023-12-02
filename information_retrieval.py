@@ -1,4 +1,5 @@
 import lsh
+import pandas as pd
 
 #getting database vectors
 print("Connecting to database...")
@@ -86,7 +87,6 @@ for prediction in test_predictions:
 print(len(test_queries))
 print(len(test_predictions))
 
-#lsh.load_csv()
 
 option = input("Would you like to enter a query (1) or use the test queries(2): ")
 if option == "1":
@@ -102,8 +102,13 @@ if option == "1":
     print("Query: ", user_query)
     print("Prediction: ", prediction)
     print("The cosine similarity between the movie vector and the prediction is: ", cosine_sim)
+    #getting ground truth from database
+    basics_df = pd.read_csv('ImdbTitleBasicsTest.csv')
+    movie_row = basics_df[basics_df['tconst'] == retrieved_ttconst]
+    ground_truth = movie_row.iloc[0]['primaryTitle']
+    print(ground_truth)
    # ground_truth = 
-    #bert_score = lsh.bert_score(prediction, ground_truth)
+    bert_score = lsh.bert_score(prediction, ground_truth)
     #print("Bert score: ", bert_score)
 else: 
     query_vectors = lsh.get_vectors_for_query(test_queries,target_dimension)
