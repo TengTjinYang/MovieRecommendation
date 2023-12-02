@@ -86,25 +86,31 @@ for prediction in test_predictions:
 print(len(test_queries))
 print(len(test_predictions))
 
+#lsh.load_csv()
 
 option = input("Would you like to enter a query (1) or use the test queries(2): ")
 if option == "1":
     user_query = input("Enter Query: ")
-    query_vector = lsh.get_vectors_for_query(user_query,target_dimension)
+    query_vector = lsh.vectorize_text(lsh.tokenize(user_query))
+    query_vector = lsh.adjust_vector_dimensions(query_vector,target_dimension)
     retrieved_vector,retrieved_ttconst = lsh.LSH(query_vector,database_vectors,identifiers)
     print(retrieved_ttconst)
-    print(retrieved_vector)
-    prediction = ""
+    prediction = "Harry meets Sally"
     prediction_vector = lsh.vectorise_prediction(prediction, target_dimension)
     cosine_sim = lsh.compute_cosine_similarity(prediction_vector,retrieved_vector)
     print()
+    print("Query: ", user_query)
+    print("Prediction: ", prediction)
     print("The cosine similarity between the movie vector and the prediction is: ", cosine_sim)
+   # ground_truth = 
+    #bert_score = lsh.bert_score(prediction, ground_truth)
+    #print("Bert score: ", bert_score)
 else: 
     query_vectors = lsh.get_vectors_for_query(test_queries,target_dimension)
     for i in range (len(query_vectors)):
         retrieved_vector,retrieved_ttconst = lsh.LSH(query_vectors[i],database_vectors,identifiers)
         print(retrieved_ttconst)
-        print(retrieved_vector)
+        print(test_queries[i])
         cosine_sim = lsh.compute_cosine_similarity(prediction_vectors[i],retrieved_vector)
         print()
         print("The cosine similarity between the movie vector and the prediction is: ", cosine_sim)
