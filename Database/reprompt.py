@@ -18,9 +18,6 @@ def generate_query(tconst):
     movie_principals_df = principals_df[principals_df['tconst'] == tconst]
     movie_ratings_df = ratings_df[ratings_df['tconst'] == tconst]
 
-    if movie_basics_df.empty or movie_principals_df.empty or movie_ratings_df.empty:
-        return "Movie with the given tconst not found or incomplete data."
-
     # Convert DataFrames to Series for single-row DataFrames
     movie_basics_row = movie_basics_df.iloc[0]
     movie_ratings_row = movie_ratings_df.iloc[0]
