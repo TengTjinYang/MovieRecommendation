@@ -1,6 +1,35 @@
 import lsh
 import pandas as pd
 
+#functions
+def generate_citation(tconst):
+    # Extract rows related to tconst
+    movie_basics_row = basics_df[basics_df['tconst'] == tconst].iloc[0]
+    movie_ratings_row = ratings_df[ratings_df['tconst'] == tconst].iloc[0]
+    movie_principals_row = principals_df[principals_df['tconst'] == tconst]
+
+    # Build the citation components
+    citation = f"{movie_basics_row['titleType'].capitalize()} '{movie_basics_row['primaryTitle']}' " \
+               f"was released in {movie_basics_row['startYear']} and has a genre of {movie_basics_row['genres']}. " \
+               f"It has an average rating of {movie_ratings_row['averageRating']} based on {movie_ratings_row['numVotes']} votes. "
+    
+    # Handle the 'Self' category from principals
+    if 'self' in movie_principals_row['category'].values:
+        # Get the nconst for 'self' entries
+        nconst_self = movie_principals_row[movie_principals_row['category'] == 'self']['nconst'].iloc[0]
+        # Get the corresponding name entry
+        primary_name_self = name_df[name_df['nconst'] == nconst_self]['primaryName'].iloc[0]
+        citation += f"The film features {primary_name_self} as themselves. "
+    
+    # Known for titles
+    known_for_titles = name_df[name_df['nconst'] == nconst_self]['knownForTitles'].iloc[0]
+    known_for_titles_list = known_for_titles.split(',')
+    if known_for_titles_list:
+        titles = ', '.join([basics_df[basics_df['tconst'] == title]['primaryTitle'].iloc[0] for title in known_for_titles_list])
+        citation += f"{primary_name_self} is also known for titles such as {titles}."
+    
+    return citation
+
 #getting database vectors
 print("Connecting to database...")
 database_vectors, identifiers = lsh.load_database_vectors('movie_data.db')
@@ -87,6 +116,18 @@ for prediction in test_predictions:
 print(len(test_queries))
 print(len(test_predictions))
 
+# File paths
+name_path = 'test/ImdbNameTest.csv'
+basics_path = 'test/ImdbTitleBasicsTest.csv'
+principals_path = 'test/ImdbTitlePrincipalsTest.csv'
+ratings_path = 'test/ImdbTitleRatingsTest.csv'
+
+# Load the files into pandas DataFrames
+name_df = pd.read_csv(name_path)
+basics_df = pd.read_csv(basics_path)
+principals_df = pd.read_csv(principals_path)
+ratings_df = pd.read_csv(ratings_path)
+
 
 option = input("Would you like to enter a query (1) or use the test queries(2): ")
 if option == "1":
@@ -105,11 +146,15 @@ if option == "1":
     #getting ground truth from database
     basics_df = pd.read_csv('ImdbTitleBasicsTest.csv')
     movie_row = basics_df[basics_df['tconst'] == retrieved_ttconst]
-    ground_truth = movie_row.iloc[0]['primaryTitle']
-    print(ground_truth)
-   # ground_truth = 
-    bert_score = lsh.bert_score(prediction, ground_truth)
+    truth = movie_row.iloc[0]['primaryTitle']
+    print(truth)
+    print(prediction)
+    print(len(truth))
+    print(len(prediction))
+    bert_score = lsh.bert_score([prediction], [truth])
     #print("Bert score: ", bert_score)
+    if cosine_sim > 0.03:
+       print(generate_citation(retrieved_ttconst))
 else: 
     query_vectors = lsh.get_vectors_for_query(test_queries,target_dimension)
     for i in range (len(query_vectors)):
@@ -122,48 +167,3 @@ else:
     bert_score = lsh.bert_score(test_predictions, ground_truth)
     print("Bert score: ", bert_score)
         
-
-# File paths
-name_path = 'Database/test/ImdbNameTest.csv'
-basics_path = 'Database/test/ImdbTitleBasicsTest.csv'
-principals_path = 'Database/test/ImdbTitlePrincipalsTest.csv'
-ratings_path = 'Database/test/ImdbTitleRatingsTest.csv'
-
-# Load the files into pandas DataFrames
-name_df = pd.read_csv(name_path)
-basics_df = pd.read_csv(basics_path)
-principals_df = pd.read_csv(principals_path)
-ratings_df = pd.read_csv(ratings_path)
-
-def generate_citation(tconst):
-    # Extract rows related to tconst
-    movie_basics_row = basics_df[basics_df['tconst'] == tconst].iloc[0]
-    movie_ratings_row = ratings_df[ratings_df['tconst'] == tconst].iloc[0]
-    movie_principals_row = principals_df[principals_df['tconst'] == tconst]
-
-    # Build the citation components
-    citation = f"{movie_basics_row['titleType'].capitalize()} '{movie_basics_row['primaryTitle']}' " \
-               f"was released in {movie_basics_row['startYear']} and has a genre of {movie_basics_row['genres']}. " \
-               f"It has an average rating of {movie_ratings_row['averageRating']} based on {movie_ratings_row['numVotes']} votes. "
-    
-    # Handle the 'Self' category from principals
-    if 'self' in movie_principals_row['category'].values:
-        # Get the nconst for 'self' entries
-        nconst_self = movie_principals_row[movie_principals_row['category'] == 'self']['nconst'].iloc[0]
-        # Get the corresponding name entry
-        primary_name_self = name_df[name_df['nconst'] == nconst_self]['primaryName'].iloc[0]
-        citation += f"The film features {primary_name_self} as themselves. "
-    
-    # Known for titles
-    known_for_titles = name_df[name_df['nconst'] == nconst_self]['knownForTitles'].iloc[0]
-    known_for_titles_list = known_for_titles.split(',')
-    if known_for_titles_list:
-        titles = ', '.join([basics_df[basics_df['tconst'] == title]['primaryTitle'].iloc[0] for title in known_for_titles_list])
-        citation += f"{primary_name_self} is also known for titles such as {titles}."
-    
-    return citation
-
-# Example usage to generate a citation
-tconst_value = 'tt0816692'
-citation = generate_citation(tconst_value)
-print(citation)
